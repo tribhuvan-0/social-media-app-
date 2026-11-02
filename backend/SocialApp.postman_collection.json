@@ -1,0 +1,1799 @@
+{
+  "info": {
+    "_postman_id": "2d962191-c11e-404c-9b8b-7646a8f4263a",
+    "name": "SocialApp REST API",
+    "description": "Comprehensive Postman collection for SocialApp covering all 34 API endpoints in docs.md across 7 domain modules with automated JWT extraction and test assertions.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080/api",
+      "type": "string",
+      "description": "API Base URL (default: http://localhost:8080/api)"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string",
+      "description": "Current JWT bearer token (automatically populated on signup/login)"
+    },
+    {
+      "key": "myUserId",
+      "value": "1",
+      "type": "string",
+      "description": "Current authenticated user ID"
+    },
+    {
+      "key": "targetUserId",
+      "value": "2",
+      "type": "string",
+      "description": "Target user ID for profile and relationship tests"
+    },
+    {
+      "key": "mediaId",
+      "value": "1",
+      "type": "string",
+      "description": "Target media ID for interaction and detail tests"
+    },
+    {
+      "key": "commentId",
+      "value": "1",
+      "type": "string",
+      "description": "Comment ID for deletion test"
+    },
+    {
+      "key": "storyId",
+      "value": "1",
+      "type": "string",
+      "description": "Story ID for mark seen test"
+    },
+    {
+      "key": "r2Key",
+      "value": "POST/1/sample-upload.jpg",
+      "type": "string",
+      "description": "Storage asset key for local storage and confirm tests"
+    },
+    {
+      "key": "uploadUrl",
+      "value": "",
+      "type": "string",
+      "description": "Presigned upload URL generated from /api/uploads/presign"
+    },
+    {
+      "key": "requesterId",
+      "value": "2",
+      "type": "string",
+      "description": "Follow requester user ID for follow request accept/decline"
+    },
+    {
+      "key": "excludeIds",
+      "value": "",
+      "type": "string",
+      "description": "Comma-separated media IDs to exclude in Reels recommendations"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Authentication",
+      "item": [
+        {
+          "name": "Signup",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Generate unique username/email if not set",
+                  "if (!pm.collectionVariables.get(\"signupUsername\")) {",
+                  "    var uid = Date.now().toString().slice(-6);",
+                  "    pm.collectionVariables.set(\"signupUsername\", \"user_\" + uid);",
+                  "    pm.collectionVariables.set(\"signupEmail\", \"user_\" + uid + \"@example.com\");",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 201 Created\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test(\"Response contains token and user profile\", function () {",
+                  "    var data = pm.response.json();",
+                  "    pm.expect(data).to.have.property(\"token\");",
+                  "    pm.expect(data).to.have.property(\"user\");",
+                  "    pm.expect(data.user).to.have.property(\"id\");",
+                  "    pm.collectionVariables.set(\"token\", data.token);",
+                  "    pm.collectionVariables.set(\"myUserId\", data.user.id.toString());",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/signup",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "signup"
+              ]
+            },
+            "description": "Registers a new user account with BCrypt password hashing, returning JWT token and Me profile.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{signupUsername}}\",\n  \"email\": \"{{signupEmail}}\",\n  \"password\": \"Password123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response contains token and stores it\", function () {",
+                  "    var data = pm.response.json();",
+                  "    pm.expect(data).to.have.property(\"token\");",
+                  "    pm.expect(data).to.have.property(\"user\");",
+                  "    pm.collectionVariables.set(\"token\", data.token);",
+                  "    if (data.user && data.user.id) {",
+                  "        pm.collectionVariables.set(\"myUserId\", data.user.id.toString());",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Authenticates user credentials, returning JWT token and Me profile.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"elena_v\",\n  \"password\": \"Password123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Me (Current User)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response matches Me DTO schema\", function () {",
+                  "    var data = pm.response.json();",
+                  "    pm.expect(data).to.have.property(\"id\");",
+                  "    pm.expect(data).to.have.property(\"username\");",
+                  "    pm.expect(data).to.have.property(\"email\");",
+                  "    pm.expect(data).to.have.property(\"isPrivate\");",
+                  "    pm.expect(data).to.have.property(\"notificationsEnabled\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            },
+            "description": "Fetches current authenticated user profile, settings, and flags."
+          },
+          "response": []
+        },
+        {
+          "name": "Change Password",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 204 No Content (or 400 if old password mismatched)\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([204, 400]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "password"
+              ]
+            },
+            "description": "Updates authenticated user's password after verifying existing password hash.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"oldPassword\": \"Password123!\",\n  \"newPassword\": \"NewPassword123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "2. Feed & Discovery",
+      "item": [
+        {
+          "name": "For You Feed",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Feed returns items and hasNext flag\", function () {",
+                  "    var data = pm.response.json();",
+                  "    pm.expect(data).to.have.property(\"items\");",
+                  "    pm.expect(data).to.have.property(\"hasNext\");",
+                  "    pm.expect(data.items).to.be.an(\"array\");",
+                  "    if (data.items.length > 0) {",
+                  "        pm.collectionVariables.set(\"mediaId\", data.items[0].id.toString());",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/feed?page=0&size=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "feed"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Paged feed of POST and REEL media from followed accounts and self, newest first."
+          },
+          "response": []
+        },
+        {
+          "name": "Suggested Users",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Suggested users list returned\", function () {",
+                  "    var data = pm.response.json();",
+                  "    pm.expect(data).to.have.property(\"items\");",
+                  "    pm.expect(data.items).to.be.an(\"array\");",
+                  "    if (data.items.length > 0) {",
+                  "        pm.collectionVariables.set(\"targetUserId\", data.items[0].id.toString());",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/suggested",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "suggested"
+              ]
+            },
+            "description": "Returns up to 10 recommended unfollowed public/active accounts ordered by popularity."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "3. Stories",
+      "item": [
+        {
+          "name": "Active Stories Feed",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Returns active stories grouped by user\", function () {",
+                  "    var data = pm.response.json();",
+                  "    pm.expect(data).to.have.property(\"items\");",
+                  "    pm.expect(data.items).to.be.an(\"array\");",
+                  "    if (data.items.length > 0 && data.items[0].stories && data.items[0].stories.length > 0) {",
+                  "        pm.collectionVariables.set(\"storyId\", data.items[0].stories[0].id.toString());",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/stories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "stories"
+              ]
+            },
+            "description": "Returns active stories (< 24h) grouped by user, ordered self -> unseen -> seen."
+          },
+          "response": []
+        },
+        {
+          "name": "Mark Story Seen",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 204 No Content (or 404 if story expired/not found)\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([204, 404]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/stories/{{storyId}}/seen",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "stories",
+                "{{storyId}}",
+                "seen"
+              ]
+            },
+            "description": "Idempotently marks a story as viewed by current user."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "4. Reels",
+      "item": [
+        {
+          "name": "Recommendations Feed",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Reels feed returns MediaCard items\", function () {",
+                  "    var data = pm.response.json();",
+                  "    pm.expect(data).to.have.property(\"items\");",
+                  "    pm.expect(data).to.have.property(\"hasNext\");",
+                  "    pm.expect(data.items).to.be.an(\"array\");",
+                  "    if (data.items.length > 0) {",
+                  "        pm.collectionVariables.set(\"mediaId\", data.items[0].id.toString());",
+                  "        var firstId = data.items[0].id.toString();",
+                  "        pm.collectionVariables.set(\"excludeIds\", firstId);",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/reels?size=5&exclude={{excludeIds}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "reels"
+              ],
+              "query": [
+                {
+                  "key": "size",
+                  "value": "5"
+                },
+                {
+                  "key": "exclude",
+                  "value": "{{excludeIds}}"
+                }
+              ]
+            },
+            "description": "Personalized 3-pool Reels recommendation algorithm with candidate exclusion and anti-clumping."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "5. Media & Comments",
+      "item": [
+        {
+          "name": "Get Media Detail",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK (or 403/404)\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 403, 404]);",
+                  "    if (pm.response.code === 200) {",
+                  "        var data = pm.response.json();",
+                  "        pm.expect(data).to.have.property(\"id\");",
+                  "        pm.expect(data).to.have.property(\"type\");",
+                  "        pm.expect(data).to.have.property(\"mediaKind\");",
+                  "        pm.expect(data).to.have.property(\"mediaUrl\");",
+                  "        pm.expect(data).to.have.property(\"user\");",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/media/{{mediaId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "media",
+                "{{mediaId}}"
+              ]
+            },
+            "description": "Retrieves a single media card with like and interaction statuses, checking privacy permissions."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Media",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 204 No Content (or 403 non-owner / 404 not found)\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([204, 403, 404]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/media/{{mediaId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "media",
+                "{{mediaId}}"
+              ]
+            },
+            "description": "Permanently deletes media, cascading database rows and purging R2/local storage assets (owner only)."
+          },
+          "response": []
+        },
+        {
+          "name": "Like Media",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Like response verified\", function () {",
+                  "    var data = pm.response.json();",
+                  "    pm.expect(data).to.have.property(\"liked\", true);",
+                  "    pm.expect(data).to.have.property(\"likeCount\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/media/{{mediaId}}/like",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "media",
+                "{{mediaId}}",
+                "like"
+              ]
+            },
+            "description": "Idempotently likes a media post, atomically incrementing like_count and boosting tag interest scores."
+          },
+          "response": []
+        },
+        {
+          "name": "Unlike Media",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Unlike response verified\", function () {",
+                  "    var data = pm.response.json();",
+                  "    pm.expect(data).to.have.property(\"liked\", false);",
+                  "    pm.expect(data).to.have.property(\"likeCount\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/media/{{mediaId}}/like",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "media",
+                "{{mediaId}}",
+                "like"
+              ]
+            },
+            "description": "Idempotently unlikes a media post, decrementing like_count and adjusting tag interest scores."
+          },
+          "response": []
+        },
+        {
+          "name": "Share Media",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Share response returns count and shareUrl\", function () {",
+                  "    var data = pm.response.json();",
+                  "    pm.expect(data).to.have.property(\"shareCount\");",
+                  "    pm.expect(data).to.have.property(\"shareUrl\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/media/{{mediaId}}/share",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "media",
+                "{{mediaId}}",
+                "share"
+              ]
+            },
+            "description": "Increments atomic share counter, logs share record, and returns shareable URL."
+          },
+          "response": []
+        },
+        {
+          "name": "View Telemetry",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 204 No Content\", function () {",
+                  "    pm.response.to.have.status(204);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/media/{{mediaId}}/view",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "media",
+                "{{mediaId}}",
+                "view"
+              ]
+            },
+            "description": "Transmits watch duration telemetry and updates user tag interest scores.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"watchMs\": 5000,\n  \"durationMs\": 10000,\n  \"completed\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Comments",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Comments list returns items and hasNext\", function () {",
+                  "    var data = pm.response.json();",
+                  "    pm.expect(data).to.have.property(\"items\");",
+                  "    pm.expect(data).to.have.property(\"hasNext\");",
+                  "    pm.expect(data.items).to.be.an(\"array\");",
+                  "    if (data.items.length > 0) {",
+                  "        pm.collectionVariables.set(\"commentId\", data.items[0].id.toString());",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/media/{{mediaId}}/comments?page=0&size=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "media",
+                "{{mediaId}}",
+                "comments"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Paged list of comments on specified media ordered oldest first."
+          },
+          "response": []
+        },
+        {
+          "name": "Add Comment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 201 Created\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test(\"Returns created comment DTO\", function () {",
+                  "    var data = pm.response.json();",
+                  "    pm.expect(data).to.have.property(\"id\");",
+                  "    pm.expect(data).to.have.property(\"text\");",
+                  "    pm.expect(data).to.have.property(\"user\");",
+                  "    pm.collectionVariables.set(\"commentId\", data.id.toString());",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/media/{{mediaId}}/comments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "media",
+                "{{mediaId}}",
+                "comments"
+              ]
+            },
+            "description": "Adds a new comment to media, atomic comment_count increment, and updates interest scores.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"Stunning perspective! Really love this composition.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Comment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 204 No Content (or 403 non-author / 404 not found)\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([204, 403, 404]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/comments/{{commentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "comments",
+                "{{commentId}}"
+              ]
+            },
+            "description": "Deletes a comment (allowed for comment author or post owner)."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "6. Users & Social Graph",
+      "item": [
+        {
+          "name": "Get Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Profile DTO structure matches contract\", function () {",
+                  "    var data = pm.response.json();",
+                  "    pm.expect(data).to.have.property(\"id\");",
+                  "    pm.expect(data).to.have.property(\"username\");",
+                  "    pm.expect(data).to.have.property(\"postCount\");",
+                  "    pm.expect(data).to.have.property(\"followerCount\");",
+                  "    pm.expect(data).to.have.property(\"followingCount\");",
+                  "    pm.expect(data).to.have.property(\"canView\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{targetUserId}}/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "{{targetUserId}}",
+                "profile"
+              ]
+            },
+            "description": "Retrieves public/private user profile with counts and relationship status flags."
+          },
+          "response": []
+        },
+        {
+          "name": "User Media Grid",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK (or 403 if private)\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 403]);",
+                  "    if (pm.response.code === 200) {",
+                  "        var data = pm.response.json();",
+                  "        pm.expect(data).to.have.property(\"items\");",
+                  "        pm.expect(data).to.have.property(\"hasNext\");",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{targetUserId}}/posts?page=0&size=18",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "{{targetUserId}}",
+                "posts"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "18"
+                }
+              ]
+            },
+            "description": "Returns 3-column media grid (POST/REEL) for profile view with privacy enforcement."
+          },
+          "response": []
+        },
+        {
+          "name": "List Followers",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK (or 403 if private)\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 403]);",
+                  "    if (pm.response.code === 200) {",
+                  "        var data = pm.response.json();",
+                  "        pm.expect(data).to.have.property(\"items\");",
+                  "        pm.expect(data).to.have.property(\"hasNext\");",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{targetUserId}}/followers?page=0&size=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "{{targetUserId}}",
+                "followers"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Paged list of followers for specified user."
+          },
+          "response": []
+        },
+        {
+          "name": "List Following",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK (or 403 if private)\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 403]);",
+                  "    if (pm.response.code === 200) {",
+                  "        var data = pm.response.json();",
+                  "        pm.expect(data).to.have.property(\"items\");",
+                  "        pm.expect(data).to.have.property(\"hasNext\");",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{targetUserId}}/following?page=0&size=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "{{targetUserId}}",
+                "following"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Paged list of users followed by specified user."
+          },
+          "response": []
+        },
+        {
+          "name": "Follow User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Returns follow action result\", function () {",
+                  "    var data = pm.response.json();",
+                  "    pm.expect(data).to.have.property(\"following\");",
+                  "    pm.expect(data).to.have.property(\"requested\");",
+                  "    pm.expect(data).to.have.property(\"followerCount\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{targetUserId}}/follow",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "{{targetUserId}}",
+                "follow"
+              ]
+            },
+            "description": "Follows public account immediately or creates follow request for private account."
+          },
+          "response": []
+        },
+        {
+          "name": "Unfollow User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Returns unfollow action result\", function () {",
+                  "    var data = pm.response.json();",
+                  "    pm.expect(data).to.have.property(\"following\", false);",
+                  "    pm.expect(data).to.have.property(\"requested\", false);",
+                  "    pm.expect(data).to.have.property(\"followerCount\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{targetUserId}}/follow",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "{{targetUserId}}",
+                "follow"
+              ]
+            },
+            "description": "Unfollows account or cancels pending follow request."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Profile updated successfully\", function () {",
+                  "    var data = pm.response.json();",
+                  "    pm.expect(data).to.have.property(\"id\");",
+                  "    pm.expect(data).to.have.property(\"bio\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me"
+              ]
+            },
+            "description": "Partial update of authenticated user's bio and/or username.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bio\": \"Software artisan & systems engineer building high-performance social tools.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Avatar",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK (or 400/403/404 if asset missing)\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 400, 403, 404]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/me/avatar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "avatar"
+              ]
+            },
+            "description": "Updates avatar key, verifying user ownership and deleting obsolete asset.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"r2Key\": \"AVATAR/{{myUserId}}/avatar.jpg\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Settings",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Settings updated successfully\", function () {",
+                  "    var data = pm.response.json();",
+                  "    pm.expect(data).to.have.property(\"isPrivate\");",
+                  "    pm.expect(data).to.have.property(\"notificationsEnabled\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/me/settings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "settings"
+              ]
+            },
+            "description": "Updates account privacy and notification settings, auto-accepting pending requests if made public.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isPrivate\": false,\n  \"notificationsEnabled\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Follow Requests",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Follow requests list returned\", function () {",
+                  "    var data = pm.response.json();",
+                  "    pm.expect(data).to.have.property(\"items\");",
+                  "    pm.expect(data).to.have.property(\"hasNext\");",
+                  "    if (data.items.length > 0) {",
+                  "        pm.collectionVariables.set(\"requesterId\", data.items[0].id.toString());",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/follow-requests?page=0&size=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "follow-requests"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Paged list of pending inbound follow requests for current user."
+          },
+          "response": []
+        },
+        {
+          "name": "Accept Follow Request",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 204 No Content (or 404 if request not found)\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([204, 404]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/follow-requests/{{requesterId}}/accept",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "follow-requests",
+                "{{requesterId}}",
+                "accept"
+              ]
+            },
+            "description": "Accepts inbound follow request, establishing follow relationship."
+          },
+          "response": []
+        },
+        {
+          "name": "Decline Follow Request",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 204 No Content (or 404 if request not found)\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([204, 404]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/follow-requests/{{requesterId}}/decline",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "follow-requests",
+                "{{requesterId}}",
+                "decline"
+              ]
+            },
+            "description": "Declines and removes inbound follow request."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "7. Uploads & Local Storage",
+      "item": [
+        {
+          "name": "Presign Upload",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Presign returns uploadUrl and r2Key\", function () {",
+                  "    var data = pm.response.json();",
+                  "    pm.expect(data).to.have.property(\"uploadUrl\");",
+                  "    pm.expect(data).to.have.property(\"r2Key\");",
+                  "    pm.collectionVariables.set(\"uploadUrl\", data.uploadUrl);",
+                  "    pm.collectionVariables.set(\"r2Key\", data.r2Key);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/uploads/presign",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "uploads",
+                "presign"
+              ]
+            },
+            "description": "Issues presigned R2 PUT URL or local fallback upload URL for binary assets.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fileName\": \"test_photo.jpg\",\n  \"contentType\": \"image/jpeg\",\n  \"type\": \"POST\",\n  \"fileSize\": 102400\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Confirm Upload",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 201 Created (or 404 if binary unuploaded)\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([201, 404]);",
+                  "    if (pm.response.code === 201) {",
+                  "        var data = pm.response.json();",
+                  "        pm.expect(data).to.have.property(\"id\");",
+                  "        pm.expect(data).to.have.property(\"mediaUrl\");",
+                  "        pm.collectionVariables.set(\"mediaId\", data.id.toString());",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/uploads/confirm",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "uploads",
+                "confirm"
+              ]
+            },
+            "description": "Validates uploaded asset in storage, persists media entity, extracts hashtags, and starts async FFmpeg worker.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"r2Key\": \"{{r2Key}}\",\n  \"type\": \"POST\",\n  \"caption\": \"Sunset over the mountains! #nature #photography #sunset\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Local Storage Binary PUT",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "image/jpeg",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/uploads/local-storage/{{r2Key}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "uploads",
+                "local-storage",
+                "{{r2Key}}"
+              ]
+            },
+            "description": "Uploads raw binary stream directly to local disk storage fallback.",
+            "body": {
+              "mode": "raw",
+              "raw": "fake_binary_jpeg_payload_for_testing"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Local Storage Binary GET",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK (or 404 if not found)\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/uploads/local-storage/{{r2Key}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "uploads",
+                "local-storage",
+                "{{r2Key}}"
+              ]
+            },
+            "description": "Streams stored binary asset with appropriate Content-Type header from local storage fallback."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

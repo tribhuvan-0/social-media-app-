@@ -1,0 +1,163 @@
+# =============================================================================
+# SocialApp — Master .gitignore
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# 1. Secrets, JWT Keys, Cloudflare R2 / S3 Credentials & Environment Configs
+# -----------------------------------------------------------------------------
+.env
+.env.*
+*.env
+!.env.example
+
+# Spring Boot local / production / secret profile overrides
+application-local.properties
+application-local.yml
+application-local.yaml
+application-prod.properties
+application-prod.yml
+application-prod.yaml
+application-secret.properties
+application-secret.yml
+application-secret.yaml
+
+# Cryptographic keys, certificates, keystores & credential dumps
+*.pem
+*.key
+*.crt
+*.cer
+*.der
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.truststore
+*secret*
+*credentials*
+*jwt_key*
+*r2_keys*
+*r2-credentials*
+.socialapp/
+
+# -----------------------------------------------------------------------------
+# 2. Internal Guides, Viva Docs, Specs, Test Reports & Agent Artifacts
+# -----------------------------------------------------------------------------
+docs.md
+VIVA_MASTER_GUIDE.md
+*VIVA*.md
+*viva*.md
+TEST_READY.md
+TEST_INFRA.md
+TEST_*.md
+*TEST*.md
+PROMPT*.md
+PLAN*.md
+.agents/
+
+# -----------------------------------------------------------------------------
+# 3. Java / Spring Boot / Maven Build Artifacts
+# -----------------------------------------------------------------------------
+target/
+backend/target/
+*.class
+*.log
+*.ctxt
+.mtj.tmp/
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+!**/src/main/**/target/
+!**/src/test/**/target/
+!backend/.mvn/wrapper/maven-wrapper.jar
+!**/maven-wrapper.jar
+hs_err_pid*
+replay_pid*
+
+# -----------------------------------------------------------------------------
+# 4. Python / Frontend Virtual Environments, Bytecode & Test Caches
+# -----------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+frontend/.venv/
+
+# Test & linter caches
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+.hypothesis/
+.mypy_cache/
+.dmypy.json
+.pyre/
+.ruff_cache/
+
+# -----------------------------------------------------------------------------
+# 5. Databases, Runtime Caches & Temporary Media Files
+# -----------------------------------------------------------------------------
+*.db
+*.sqlite
+*.sqlite3
+*.h2.db
+*.trace.db
+*.lock.db
+*.tmp
+*.temp
+*.part
+*.bak
+.cache/
+
+# -----------------------------------------------------------------------------
+# 6. IDE, Editor & OS Metadata
+# -----------------------------------------------------------------------------
+.vscode/
+.idea/
+*.iml
+*.ipr
+*.iws
+.project
+.classpath
+.settings/
+.springBeans
+.sts4-cache/
+.factorypath
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+*~
+*.swp
+*.swo
+
